@@ -23,6 +23,10 @@
 #include <linux/file.h>
 #include <linux/nls.h>
 
+#if defined(CONFIG_UFSTW)
+#include <linux/ufstw.h>
+#endif
+
 #include "f2fs.h"
 #include "node.h"
 #include "segment.h"
@@ -261,7 +265,12 @@ static int f2fs_do_sync_file(struct file *file, loff_t start, loff_t end,
 	};
 	unsigned int seq_id = 0;
 
-	if (unlikely(f2fs_readonly(inode->i_sb)))
+#if defined(CONFIG_UFSTW)
+	bool turbo_set = false;
+#endif
+
+	if (unlikely(f2fs_readonly(inode->i_sb) ||
+				is_sbi_flag_set(sbi, SBI_CP_DISABLED)))
 		return 0;
 
 	trace_f2fs_sync_file_enter(inode);
@@ -332,6 +341,10 @@ go_write:
 		clear_inode_flag(inode, FI_UPDATE_WRITE);
 		goto out;
 	}
+#if defined(CONFIG_UFSTW)
+	bdev_set_turbo_write(sbi->sb->s_bdev);
+	turbo_set = true;
+#endif
 sync_nodes:
 	atomic_inc(&sbi->wb_sync_req[NODE]);
 	ret = f2fs_fsync_node_pages(sbi, inode, &wbc, atomic, &seq_id);
@@ -378,6 +391,28 @@ flush_out:
 	}
 	f2fs_update_time(sbi, REQ_TIME);
 out:
+#if defined(CONFIG_UFSTW)
+	if (turbo_set)
+		bdev_clear_turbo_write(sbi->sb->s_bdev);
+#endif
+	delta = ktime_sub(ktime_get(), start_time);
+	duration = (unsigned long long) ktime_to_ns(delta) / (1000 * 1000);
+
+	/* print slow fsync spend more than 1s */
+	if (duration > 1000) {
+		char *file_path, file_pathbuf[MAX_TRACE_PATHBUF_LEN];
+
+		file_path = android_fstrace_get_pathname(file_pathbuf,
+				MAX_TRACE_PATHBUF_LEN, inode);
+		pr_info("[f2fs] slow fsync: %llu ms, cp_reason: %s, "
+			"datasync = %d, ret = %d, comm: %s: (uid %u, gid %u), "
+			"entry: %s", duration, f2fs_cp_reasons[cp_reason],
+			datasync, ret, current->comm,
+			from_kuid_munged(&init_user_ns, current_fsuid()),
+			from_kgid_munged(&init_user_ns, current_fsgid()),
+			file_path);
+	}
+
 	trace_f2fs_sync_file_exit(inode, cp_reason, datasync, ret);
 	f2fs_trace_ios(NULL, 1);
 	trace_android_fs_fsync_end(inode, start, end - start);
@@ -984,7 +1019,12 @@ int f2fs_setattr(struct dentry *dentry, struct iattr *attr)
 			clear_inode_flag(inode, FI_ACL_MODE);
 		}
 	}
-
+#ifdef CONFIG_FS_HPB
+		if (__is_hpb_file(dentry->d_name.name, inode))
+			set_inode_flag(inode, FI_HPB_INODE);
+		else
+			clear_inode_flag(inode, FI_HPB_INODE);
+#endif
 	/* file size may changed here */
 	f2fs_mark_inode_dirty_sync(inode, true);
 
