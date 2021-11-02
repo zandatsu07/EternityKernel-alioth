@@ -17,14 +17,14 @@
 #include <trace/events/power.h>
 #include <linux/sched/sysctl.h>
 
-static unsigned int default_efficient_freq_lp[] = {0};
-static u64 default_up_delay_lp[] = {0};
+static unsigned int default_efficient_freq_lp[] = {CONFIG_SCHEDHORIZON_DEFAULT_EFFICIENT_FREQ_LP};
+static u64 default_up_delay_lp[] = {CONFIG_SCHEDHORIZON_DEFAULT_UP_DELAY_LP * NSEC_PER_MSEC};
 
-static unsigned int default_efficient_freq_hp[] = {0};
-static u64 default_up_delay_hp[] = {0};
+static unsigned int default_efficient_freq_hp[] = {CONFIG_SCHEDHORIZON_DEFAULT_EFFICIENT_FREQ_HP};
+static u64 default_up_delay_hp[] = {CONFIG_SCHEDHORIZON_DEFAULT_UP_DELAY_HP * NSEC_PER_MSEC};
 
-static unsigned int default_efficient_freq_pr[] = {0};
-static u64 default_up_delay_pr[] = {0};
+static unsigned int default_efficient_freq_pr[] = {CONFIG_SCHEDHORIZON_DEFAULT_EFFICIENT_FREQ_PR};
+static u64 default_up_delay_pr[] = {CONFIG_SCHEDHORIZON_DEFAULT_UP_DELAY_PR * NSEC_PER_MSEC};
 
 #define DEFAULT_RTG_BOOST_FREQ_LP 1000000
 #define DEFAULT_RTG_BOOST_FREQ_HP 0
