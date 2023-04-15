@@ -863,15 +863,8 @@ static ssize_t role_store(struct device *dev,
 			     strlen(ci->roles[role]->name)))
 			break;
 
-	if (role == CI_ROLE_END)
+	if (role == CI_ROLE_END || role == ci->role)
 		return -EINVAL;
-
-	mutex_lock(&ci->mutex);
-
-	if (role == ci->role) {
-		mutex_unlock(&ci->mutex);
-		return n;
-	}
 
 	pm_runtime_get_sync(dev);
 	disable_irq(ci->irq);
@@ -881,7 +874,6 @@ static ssize_t role_store(struct device *dev,
 		ci_handle_vbus_change(ci);
 	enable_irq(ci->irq);
 	pm_runtime_put_sync(dev);
-	mutex_unlock(&ci->mutex);
 
 	return (ret == 0) ? n : ret;
 }
@@ -920,7 +912,6 @@ static int ci_hdrc_probe(struct platform_device *pdev)
 		return -ENOMEM;
 
 	spin_lock_init(&ci->lock);
-	mutex_init(&ci->mutex);
 	ci->dev = dev;
 	ci->platdata = dev_get_platdata(dev);
 	ci->imx28_write_fix = !!(ci->platdata->flags &
@@ -1163,29 +1154,6 @@ static void ci_controller_suspend(struct ci_hdrc *ci)
 	enable_irq(ci->irq);
 }
 
-/*
- * Handle the wakeup interrupt triggered by extcon connector
- * We need to call ci_irq again for extcon since the first
- * interrupt (wakeup int) only let the controller be out of
- * low power mode, but not handle any interrupts.
- */
-static void ci_extcon_wakeup_int(struct ci_hdrc *ci)
-{
-	struct ci_hdrc_cable *cable_id, *cable_vbus;
-	u32 otgsc = hw_read_otgsc(ci, ~0);
-
-	cable_id = &ci->platdata->id_extcon;
-	cable_vbus = &ci->platdata->vbus_extcon;
-
-	if (!IS_ERR(cable_id->edev) && ci->is_otg &&
-		(otgsc & OTGSC_IDIE) && (otgsc & OTGSC_IDIS))
-		ci_irq(ci->irq, ci);
-
-	if (!IS_ERR(cable_vbus->edev) && ci->is_otg &&
-		(otgsc & OTGSC_BSVIE) && (otgsc & OTGSC_BSVIS))
-		ci_irq(ci->irq, ci);
-}
-
 static int ci_controller_resume(struct device *dev)
 {
 	struct ci_hdrc *ci = dev_get_drvdata(dev);
@@ -1218,7 +1186,6 @@ static int ci_controller_resume(struct device *dev)
 		enable_irq(ci->irq);
 		if (ci_otg_is_fsm_mode(ci))
 			ci_otg_fsm_wakeup_by_srp(ci);
-		ci_extcon_wakeup_int(ci);
 	}
 
 	return 0;
