@@ -66,6 +66,8 @@
 #define SDE_DRM_BLEND_OP_LAYER_COLOR    4
 #define SDE_DRM_BLEND_OP_MAX            5
 
+#define FOD_PRESSED_LAYER_ZORDER 0x20000000u
+
 /**
  * Bit masks for "src_config" property
  * construct bitmask via (1UL << SDE_DRM_<flag>)
