@@ -419,6 +419,10 @@ struct kgsl_context_property {
 	__u32 contextid;
 };
 
+struct kgsl_gpu_model {
+	char gpu_model[32];
+};
+
 struct kgsl_context_property_fault {
 	__s32 faults;
 	__u32 timestamp;
