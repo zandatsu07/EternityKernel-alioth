@@ -264,6 +264,8 @@ static int f2fs_do_sync_file(struct file *file, loff_t start, loff_t end,
 		.for_reclaim = 0,
 	};
 	unsigned int seq_id = 0;
+	ktime_t start_time, delta;
+	unsigned long long duration;
 
 #if defined(CONFIG_UFSTW)
 	bool turbo_set = false;
