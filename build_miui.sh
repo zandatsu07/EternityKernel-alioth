@@ -106,6 +106,12 @@ function miui_fix_fod() {
     sed -i 's/\/\/39 01 00 00 00 00 03 51 03 FF/39 01 00 00 00 00 03 51 03 FF/g' $dts_source/dsi-panel-j9-38-0a-0a-fhd-video.dtsi
 }
 
+miui_fix_dimens
+miui_fix_fps
+miui_fix_dfps
+miui_fix_fod
+
+
 
 OUT_BOOT_DIR="$KERNEL_ROOT_DIR/out/arch/$TARGET_ARCH/boot"
 DTB_DTBO_DIR="$OUT_BOOT_DIR/dts/vendor/qcom"
