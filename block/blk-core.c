@@ -1618,8 +1618,6 @@ static struct request *blk_old_get_request(struct request_queue *q,
 	rq->bio = rq->biotail = NULL;
 	return rq;
 }
-
-#if defined(UFSFEATURE_31) || defined(UFSFEATURE_31)
 /* flags: BLK_MQ_REQ_PREEMPT and/or BLK_MQ_REQ_NOWAIT. */
 struct request *blk_old_get_request_no_ioc(struct request_queue *q,
                                unsigned int op, blk_mq_req_flags_t flags)
@@ -1655,7 +1653,6 @@ struct request *blk_old_get_request_no_ioc(struct request_queue *q,
        return rq;
 }
 EXPORT_SYMBOL(blk_old_get_request_no_ioc);
-#endif
 
 /**
  * blk_get_request - allocate a request
