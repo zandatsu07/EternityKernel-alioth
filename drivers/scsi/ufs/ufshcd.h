@@ -61,6 +61,7 @@
 #include <linux/reset.h>
 #include <linux/extcon-provider.h>
 #include <linux/devfreq.h>
+#include <linux/pm_qos.h>
 #include "unipro.h"
 
 #include <asm/irq.h>
@@ -71,6 +72,7 @@
 #include <scsi/scsi_tcq.h>
 #include <scsi/scsi_dbg.h>
 #include <scsi/scsi_eh.h>
+#include <linux/android_kabi.h>
 
 #include <linux/fault-inject.h>
 
@@ -195,6 +197,8 @@ enum ufs_pm_level {
 	UFS_PM_LVL_5, /* UFS_POWERDOWN_PWR_MODE, UIC_LINK_OFF_STATE */
 	UFS_PM_LVL_MAX
 };
+
+
 
 struct ufs_pm_lvl_states {
 	enum ufs_dev_pwr_mode dev_state;
@@ -408,6 +412,11 @@ struct ufs_hba_variant_ops {
 #endif
 	int	(*program_key)(struct ufs_hba *hba,
 			       const union ufs_crypto_cfg_entry *cfg, int slot);
+
+	ANDROID_KABI_RESERVE(1);
+	ANDROID_KABI_RESERVE(2);
+	ANDROID_KABI_RESERVE(3);
+	ANDROID_KABI_RESERVE(4);
 };
 
 /**
@@ -442,6 +451,11 @@ struct ufs_hba_crypto_variant_ops {
 				    struct scsi_cmnd *cmd,
 				    struct ufshcd_lrb *lrbp);
 	void *priv;
+
+	ANDROID_KABI_RESERVE(1);
+	ANDROID_KABI_RESERVE(2);
+	ANDROID_KABI_RESERVE(3);
+	ANDROID_KABI_RESERVE(4);
 };
 
 struct ufs_hba_pm_qos_variant_ops {
@@ -449,7 +463,6 @@ struct ufs_hba_pm_qos_variant_ops {
 	void		(*req_end)(struct ufs_hba *hba, struct request *req,
 				   bool should_lock);
 };
-
 
 /* clock gating state  */
 enum clk_gating_state {
@@ -494,6 +507,7 @@ struct ufs_clk_gating {
 	struct device_attribute delay_perf_attr;
 	struct device_attribute enable_attr;
 	bool is_enabled;
+	bool gate_wk_in_process;
 	int active_reqs;
 	struct workqueue_struct *clk_gating_workq;
 };
@@ -944,6 +958,12 @@ struct ufs_hba {
 	 */
 	#define UFSHCI_QUIRK_BROKEN_HCE				0x400
 
+	/*
+	* This quirk needs to be enabled if the host controller cannot
+	* support SAMSUNG and WDC interface configuration.
+	*/
+	#define UFS_DEVICE_QUIRK_PA_SYNCLENGTH			0x700
+
 	/* HIBERN8 support is broken */
 	#define UFSHCD_QUIRK_BROKEN_HIBERN8			0x800
 
@@ -1141,10 +1161,19 @@ struct ufs_hba {
        struct ufsf_feature *ufsf;
 #endif
 
-        ANDROID_KABI_RESERVE(1);
-        ANDROID_KABI_RESERVE(2);
-        ANDROID_KABI_RESERVE(3);
-        ANDROID_KABI_RESERVE(4);
+	ANDROID_KABI_RESERVE(1);
+	ANDROID_KABI_RESERVE(2);
+	ANDROID_KABI_RESERVE(3);
+	ANDROID_KABI_RESERVE(4);
+
+	struct {
+		struct pm_qos_request req;
+		struct work_struct get_work;
+		struct work_struct put_work;
+		struct mutex lock;
+		atomic_t count;
+		bool active;
+	} pm_qos;
 };
 
 static inline void ufshcd_mark_shutdown_ongoing(struct ufs_hba *hba)
@@ -1411,7 +1440,6 @@ int ufshcd_query_flag(struct ufs_hba *hba, enum query_opcode opcode,
 	enum flag_idn idn, bool *flag_res);
 int ufshcd_read_string_desc(struct ufs_hba *hba, int desc_index,
 			    u8 *buf, u32 size, bool ascii);
-
 #if defined(CONFIG_UFSFEATURE_31)
 int ufshcd_exec_dev_cmd(struct ufs_hba *hba,
 			enum dev_cmd_type cmd_type, int timeout);
@@ -1420,6 +1448,7 @@ void ufshcd_release_all(struct ufs_hba *hba);
 int ufshcd_issue_tm_cmd(struct ufs_hba *hba, int lun_id, int task_id,
 			u8 tm_function, u8 *tm_response);
 #endif
+
 int ufshcd_hold(struct ufs_hba *hba, bool async);
 void ufshcd_release(struct ufs_hba *hba, bool no_sched);
 int ufshcd_wait_for_doorbell_clr(struct ufs_hba *hba, u64 wait_timeout_us);
@@ -1640,6 +1669,7 @@ static inline void ufshcd_vops_pm_qos_req_end(struct ufs_hba *hba,
 	if (hba->var && hba->var->pm_qos_vops && hba->var->pm_qos_vops->req_end)
 		hba->var->pm_qos_vops->req_end(hba, req, lock);
 }
+
 
 extern struct ufs_pm_lvl_states ufs_pm_lvl_states[];
 

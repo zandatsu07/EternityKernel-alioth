@@ -186,7 +186,6 @@ enum unit_desc_param {
 #endif
 #if defined(CONFIG_UFSTW_31)
 	UNIT_DESC_TW_LU_WRITE_BUFFER_ALLOC_UNIT		= 0x29,
-
 #endif
 };
 
@@ -685,8 +684,6 @@ struct ufs_dev_info {
 	u8	i_product_name;
 	u16	w_spec_version;
 	u32	d_ext_ufs_feature_sup;
-	u8	b_wb_buffer_type;
-	bool wb_config_lun;
 
 	/* query flags */
 	bool f_power_on_wp_en;

@@ -169,14 +169,12 @@ config UFSTW_IGNORE_GUARANTEE_BIT_31
        ignore the guarantee bit[31] of dTurboWriteBufferLifeTimeEst for PoC
 
 config UFSTW_BOOT_ENABLED
-        bool "Turbo Write enabled at boot time"
+       bool "Turbo Write enabled at boot time"
        default y
        depends on SCSI_UFSHCD && UFSFEATURE_31 && UFSTW_31
        ---help---
        fTurboWriteEn and fTurboWriteBufferFlushDuringHibnerEnter flags
        are enabled at boot time.
-
-
 
 config UFSTW_31
 	bool "UFS Turbo Write support"
@@ -241,7 +239,7 @@ config UFSTW_IGNORE_GUARANTEE_BIT
 
 config UFSTW_ENABLE_BY_DEFAULT
 	bool "UFSTW_ENABLE_BY_DEFAULT"
-	default n
+	default y
 	depends on SCSI_UFSHCD && UFSFEATURE && UFSTW
 	---help---
 	Activate UFS Turbo Write right after powering up
