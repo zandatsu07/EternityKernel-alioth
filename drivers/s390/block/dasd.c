@@ -2835,7 +2835,7 @@ static int _dasd_requeue_request(struct dasd_ccw_req *cqr)
 		return -EINVAL;
 	spin_lock_irq(&cqr->dq->lock);
 	req = (struct request *) cqr->callback_data;
-	blk_mq_requeue_request(req, false);
+	blk_mq_requeue_request(req, true);
 	spin_unlock_irq(&cqr->dq->lock);
 
 	return 0;
