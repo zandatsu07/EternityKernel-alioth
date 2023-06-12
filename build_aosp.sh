@@ -310,19 +310,6 @@ get_proton_clang-13.0() {
 	REPO="https://github.com/kdrag0n/proton-clang"
 	BRANCH="master"
 
-	if [[ $USER != "$USER_OVERRIDE" ]]; then
-
-		git_clone "${REPO}" "${BRANCH}" "${TC}" &
-		check_updates_from_github "${REPO}" "${BRANCH}" "${TC}" &
-
-		wait
-
-		TC="$TC/$(echo ${REPO} | cut -f5 -d/)-${BRANCH}"
-	else
-		git_clone "${REPO}" "${BRANCH}" "${TC}"
-		check_updates_from_github "${REPO}" "${BRANCH}" "${TC}"
-	fi
-
 	CROSS="$TC/bin/aarch64-linux-gnu-"
 	CROSS_ARM32="$TC/bin/arm-linux-gnueabi-"
 
@@ -334,8 +321,8 @@ get_proton_clang-13.0() {
 
 	if [[ $DISABLE_LLD == "1" ]]; then
 		MAKEOPTS="CC=clang AR=${PFX_OVERRIDE}llvm-ar AS=${PFX_OVERRIDE}llvm-as NM=${PFX_OVERRIDE}llvm-nm STRIP=${PFX_OVERRIDE}llvm-strip
-					OBJCOPY=${PFX_OVERRIDE}llvm-objcopy OBJDUMP=${PFX_OVERRIDE}llvm-objdump READELF=${PFX_OVERRIDE}llvm-readelf
-					HOSTAR=${PFX_OVERRIDE}llvm-ar HOSTAS=${PFX_OVERRIDE}llvm-as"
+				        OBJDUMP=${PFX_OVERRIDE}llvm-objdump READELF=${PFX_OVERRIDE}llvm-readelf
+				        LLVM=1 LLVM_IAS=1"
 	else
 		if [[ $DISABLE_IAS == "1" ]]; then
 			MAKEOPTS="CC=clang LD=${PFX_OVERRIDE}ld.lld AR=${PFX_OVERRIDE}llvm-ar NM=${PFX_OVERRIDE}llvm-nm STRIP=${PFX_OVERRIDE}llvm-strip
